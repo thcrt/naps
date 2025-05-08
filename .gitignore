@@ -12,3 +12,6 @@ _version.py
 .*_cache/
 __pycache__/
 *.py[oc]
+
+# Instance data
+config.toml

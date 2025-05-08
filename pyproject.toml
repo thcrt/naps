@@ -8,7 +8,9 @@ authors = [
 ]
 requires-python = ">=3.13"
 dependencies = [
+    "requests>=2.32.3",
     "rich>=14.0.0",
+    "tattl>=0.3.1",
     "typer>=0.15.3",
 ]
 
@@ -85,5 +87,5 @@ lint.select = [
   "RUF",   # ruff
   "TRY",   # tryceratops
 ]
-lint.ignore = ["D100", "D101", "D102", "D103", "D104", "D105", "D106", "D107"]
+lint.ignore = ["D100", "D101", "D102", "D103", "D104", "D105", "D106", "D107", "TRY400"]
 lint.pydocstyle.convention = "google"
