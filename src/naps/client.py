@@ -1,14 +1,25 @@
 import logging
 from http import HTTPMethod, HTTPStatus
-from typing import Any
+from json import JSONDecodeError
+from typing import Any, Literal
 from urllib.parse import urljoin
 
 from requests import HTTPError, Response, Session
-
-from .errors import AuthenticationError
+from rich.json import JSON
 
 logger = logging.getLogger(__name__)
 DEFAULT_OK = [HTTPStatus.OK]
+
+
+def format_payload(data: str | bytes | None):
+    if not data:
+        return ""
+    if isinstance(data, bytes):
+        data = data.decode()
+    try:
+        return JSON(data).text
+    except JSONDecodeError:
+        return data
 
 
 class ImmichClient:
@@ -30,18 +41,36 @@ class ImmichClient:
     ) -> Response:
         url = urljoin(self.host, path)
         res = self._session.request(method=method, url=url, **kwargs)
-        logger.debug("%s %s %s", res.status_code, res.request.method, res.url)
+        logger.debug(
+            "%(status)s %(method)s %(url)s \nRequest: %(req)s \nResult: %(res)s",
+            {
+                "status": res.status_code,
+                "method": res.request.method,
+                "url": res.url,
+                "req": format_payload(res.request.body),
+                "res": format_payload(res.text),
+            },
+        )
         if res.status_code not in ok:
             raise HTTPError(response=res)
-        return res
+        return res.json()
 
     def validate_authentication(self):
-        try:
-            _ = self.request(HTTPMethod.POST, "api/auth/validateToken")
-            logger.info("Authentication successful")
-        except HTTPError as e:
-            match e.response.status_code:
-                case HTTPStatus.UNAUTHORIZED:
-                    raise AuthenticationError from e
-                case _:
-                    raise
+        _ = self.request(HTTPMethod.POST, "api/auth/validateToken")
+        logger.info("Authentication successful")
+
+    def get_random(
+        self,
+        number: int = 1,
+        asset_type: Literal["IMAGE", "VIDEO", "AUDIO", "OTHER"] = "IMAGE",
+        tag: str | None = None,
+    ):
+        return self.request(
+            HTTPMethod.POST,
+            "api/search/random",
+            json={
+                "size": number,
+                "type": asset_type,
+                "tagIds": [tag] if tag else [],
+            },
+        )

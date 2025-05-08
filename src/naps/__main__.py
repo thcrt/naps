@@ -1,11 +1,12 @@
 import logging
 from enum import StrEnum, auto
+from http import HTTPStatus
 
 import typer
 from requests import HTTPError
 from rich.logging import RichHandler
 
-from .client import AuthenticationError, ImmichClient
+from .client import ImmichClient
 from .config import load_config
 
 app = typer.Typer()
@@ -29,11 +30,15 @@ def main(log: str = "INFO") -> None:
     client = ImmichClient(config.base_url, config.api_key)
     logger.info("Connected to %s", client.host)
 
+    client.get_random()
+
 
 if __name__ == "__main__":
     try:
         app()
-    except AuthenticationError:
-        logger.error("Invalid API token!")
     except HTTPError as e:
-        logger.error("Unexpected HTTP %s error!", e.response.status_code)
+        match e.response.status_code:
+            case HTTPStatus.UNAUTHORIZED:
+                logger.error("Invalid API token!")
+            case _:
+                logger.error("Unexpected HTTP %s error!", e.response.status_code)
