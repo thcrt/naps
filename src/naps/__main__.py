@@ -30,7 +30,7 @@ def main(log: str = "INFO") -> None:
     client = ImmichClient(config.base_url, config.api_key)
     logger.info("Connected to %s", client.host)
 
-    client.get_random()
+    client.get_random(number=1)
 
 
 if __name__ == "__main__":
