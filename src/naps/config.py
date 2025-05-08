@@ -9,6 +9,7 @@ import tattl
 class Config:
     base_url: str
     api_key: str
+    tag_name: str
 
 
 def load_config():

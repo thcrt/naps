@@ -37,7 +37,24 @@ class ImmichAsset:
 
     @override
     def __repr__(self) -> str:
-        return f'ImmichAsset(type="{self.asset_type}", id="{self.id}")'
+        return f'ImmichAsset({self.asset_type}, "{self.id}")'
+
+
+class ImmichTag:
+    id: str
+    parent_id: str | None
+    name: str
+    full_name: str
+
+    def __init__(self, **kwargs: Any) -> None:
+        self.id = kwargs["id"]
+        self.name = kwargs["name"]
+        self.full_name = kwargs["value"]
+        self.parent_id = kwargs.get("parentId")
+
+    @override
+    def __repr__(self) -> str:
+        return f'ImmichTag("{self.full_name}", "{self.id}")'
 
 
 class ImmichClient:
@@ -79,30 +96,49 @@ class ImmichClient:
         _ = self.request(HTTPMethod.POST, "api/auth/validateToken")
         logger.info("Authentication successful")
 
+    def get_tags(self) -> list[ImmichTag]:
+        logger.info("Looking up all tags")
+        tags = [ImmichTag(**tag) for tag in self.request(HTTPMethod.GET, "api/tags")]
+        logger.info("Found %d tags", len(tags))
+        return tags
+
+    def get_tag_by_name(self, name: str) -> ImmichTag:
+        matches = list(filter((lambda tag: tag.full_name == name), self.get_tags()))
+        if len(matches) != 1:
+            logger.error(
+                "Expected only one tag with name %(name)s, but %(matches)d were found!",
+                {"name": name, "matches": len(matches)},
+            )
+        tag = matches[0]
+        logger.info("Filtered tags by name, selected %s", repr(tag))
+        return tag
+
     def get_random(
         self,
         number: int = 1,
         asset_type: ImmichAssetType | None = "IMAGE",
-        tag: str | None = None,
+        tag_id: str | None = None,
     ):
         logger.info(
             "Requesting random assets [count: %(n)d, type: %(type)s, tag: %(tag)s]",
             {
                 "n": number,
                 "type": asset_type,
-                "tag": tag,
+                "tag": tag_id,
             },
         )
-        res = self.request(
-            HTTPMethod.POST,
-            "api/search/random",
-            json={
-                "size": number,
-                "type": asset_type,
-                "tagIds": [tag] if tag else [],
-            },
-        )
-        assets = [ImmichAsset(**asset) for asset in res]
+        assets = [
+            ImmichAsset(**asset)
+            for asset in self.request(
+                HTTPMethod.POST,
+                "api/search/random",
+                json={
+                    "size": number,
+                    "type": asset_type,
+                    "tagIds": [tag_id] if tag_id else [],
+                },
+            )
+        ]
 
         if len(assets) != number:
             logger.error("Requested %d assets, but %d assets were found!", number, len(assets))
