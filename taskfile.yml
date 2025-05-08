@@ -1,0 +1,90 @@
+version: '3'
+
+set: [errexit, nounset, pipefail]
+shopt: [globstar]
+
+env:
+  PROJECT_VERSION:
+    sh: uvx hatch version
+  TAG_VERSION:
+    sh: echo {{ .PROJECT_VERSION }} | tr '+' '.'
+  TAG_BRANCH:
+    sh: git branch --show-current
+
+tasks:
+  default:
+    # If no task is specified, we use the magic variable `TASK_EXE` to call `task` again with `--list`.
+    # See https://github.com/go-task/task/issues/1562.
+    silent: true
+    cmds:
+      - "{{.TASK_EXE}} --list"
+
+  install-deps:
+    hidden: true
+    sources:
+      - ./pyproject.toml
+      - ./uv.lock
+    cmd: uv sync --no-install-project
+
+  check-lint:
+    hidden: true
+    deps: [install-deps]
+    sources:
+      - ./pyproject.toml
+      - ./src/**/*
+      - exclude: ./**/__pycache__/**/*
+    cmd: uv run ruff check --fix
+  
+  check-types:
+    hidden: true
+    deps: [install-deps]
+    sources:
+      - ./pyproject.toml
+      - ./src/**/*
+      - exclude: ./**/__pycache__/**/*
+    cmd: uv run pyright
+  
+  check-format:
+    hidden: true
+    deps: [install-deps]
+    sources:
+      - ./pyproject.toml
+      - ./src/**/*
+      - exclude: ./**/__pycache__/**/*
+    cmd: uv run ruff format
+
+  check:
+    desc: Run and apply checks and fixes for linting, formatting and type hinting
+    cmds:
+      - task: check-lint
+      - task: check-types
+      - task: check-format
+  
+  build:
+    desc: Build Docker container
+    interactive: true
+    cmd: >
+      docker build
+      --progress=quiet
+      --tag naps:{{ .TAG_VERSION }}
+      --tag naps:{{ .TAG_BRANCH }}
+      --build-arg PROJECT_VERSION={{ .PROJECT_VERSION }}
+      .
+      && echo naps:{{ .TAG_VERSION }}
+      && echo naps:{{ .TAG_BRANCH }}
+  
+  run:
+    desc: Run `naps`
+    deps: [install-deps]
+    cmd: uv run python -m naps
+  
+  clean:
+    desc: Clean all ephemeral and build files
+    cmd: >
+      rm -rf
+      ./.ruff_cache/
+      ./.task/
+      ./.venv/
+      ./build/
+      ./**/__pycache__/
+      ./**/_version.py

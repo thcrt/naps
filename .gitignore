@@ -1,0 +1,14 @@
+# Build artifacts
+build/
+dist/
+wheels/
+_version.py
+
+# Installed dependencies
+.venv/
+
+# Caches
+.task/
+.*_cache/
+__pycache__/
+*.py[oc]

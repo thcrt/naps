@@ -1,0 +1,89 @@
+[project]
+name = "naps"
+dynamic = ["version"]
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "thcrt", email = "110127860+thcrt@users.noreply.github.com" }
+]
+requires-python = ">=3.13"
+dependencies = [
+    "rich>=14.0.0",
+    "typer>=0.15.3",
+]
+
+[dependency-groups]
+dev = [
+    "pyright>=1.1.400",
+    "ruff>=0.11.8",
+]
+
+[build-system]
+requires = ["hatchling", "hatch-vcs"]
+build-backend = "hatchling.build"
+
+[tool.hatch]
+version.source = "vcs"
+build.hooks.vcs.version-file = "src/naps/_version.py"
+build.packages = ["src/naps"]
+
+[tool.pyright]
+include = ["src/naps"]
+strict = ["**/*"]
+ignore = ["**/_version.py"]
+deprecateTypingAliases = true
+reportCallInDefaultInitializer = "information"
+reportImplicitOverride = "warning"
+reportImplicitStringConcatenation = "warning"
+reportPropertyTypeMismatch = "warning"
+reportShadowedImports = "warning"
+reportUninitializedInstanceVariable = "warning"
+reportUnnecessaryTypeIgnoreComment = "warning"
+reportUnusedCallResult = "information"
+
+[tool.ruff]
+line-length = 100
+lint.select = [
+  "ERA",   # eradicate
+  "ASYNC", # flake8-async
+  "S",     # flake8-bandit
+  "BLE",   # flake8-blind-except
+  "FBT",   # flake8-boolean-trap
+  "B",     # flake8-bugbear
+  "A",     # flake8-builtins
+  "C4",    # flake8-comprehensions
+  "EM",    # flake8-errmsg
+  "FA",    # flake8-future-annotations
+  "ISC",   # flake8-implicit-str-concat
+  "LOG",   # flake8-logging
+  "G",     # flake8-logging-format
+  "INP",   # flake8-no-pep420
+  "PIE",   # flake8-pie
+  "T20",   # flake8-print
+  "Q",     # flake8-quotes
+  "RSE",   # flake8-raise
+  "RET",   # flake8-return
+  "SLF",   # flake8-self
+  "SIM",   # flake8-simplify
+  "SLOT",  # flake8-slots
+  "TID",   # flake8-tidy-imports
+  "TC",    # flake8-type-checking
+  "ARG",   # flake8-unused-arguments
+  "PTH",   # flake8-use-pathlib
+  "FLY",   # flynt
+  "I",     # isort
+  "C90",   # mccabe
+  "N",     # pep8-naming
+  "PERF",  # perflint
+  "E",     # pycodestyle errors
+  "W",     # pycodestyle warnings
+  "D",     # pydocstyle
+  "F",     # pyflakes
+  "PL",    # pylint
+  "UP",    # pyupgrade
+  "FURB",  # refurb
+  "RUF",   # ruff
+  "TRY",   # tryceratops
+]
+lint.ignore = ["D100", "D101", "D102", "D103", "D104", "D105", "D106", "D107"]
+lint.pydocstyle.convention = "google"
