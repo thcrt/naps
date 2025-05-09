@@ -68,17 +68,35 @@ class ImmichClient:
         self._session.headers.update({"x-api-key": api_key})
         self.validate_authentication()
 
-    def request(
+    def _request(
+        self,
+        method: HTTPMethod,
+        path: str,
+        ok: list[HTTPStatus] = DEFAULT_OK,
+        **kwargs: Any,
+    ):
+        res = self._session.request(
+            method=method,
+            url=urljoin(self.host, path),
+            **kwargs,
+        )
+        if res.status_code not in ok:
+            raise HTTPError(response=res)
+        return res
+
+    def request_json(
         self,
         method: HTTPMethod,
         path: str,
         ok: list[HTTPStatus] = DEFAULT_OK,
         **kwargs: Any,
     ) -> Any:
-        url = urljoin(self.host, path)
-        res = self._session.request(method=method, url=url, **kwargs)
+        res = self._request(method, path, ok, **kwargs)
         logger.debug(
-            "%(status)s %(method)s %(url)s \nRequest: %(req)s \nResult: %(res)s",
+            """%(status)s %(method)s [JSON] %(url)s
+Request:   %(req)s
+Response:  %(res)s
+            """,
             {
                 "status": res.status_code,
                 "method": res.request.method,
@@ -87,18 +105,37 @@ class ImmichClient:
                 "res": format_payload(res.text),
             },
         )
-        if res.status_code not in ok:
-            raise HTTPError(response=res)
         return res.json()
+
+    def request_bytes(
+        self,
+        method: HTTPMethod,
+        path: str,
+        ok: list[HTTPStatus] = DEFAULT_OK,
+        **kwargs: Any,
+    ) -> bytes:
+        res = self._request(method, path, ok, **kwargs)
+        logger.debug(
+            """%(status)s %(method)s [BYTES] %(url)s
+Request:   %(req)s
+            """,
+            {
+                "status": res.status_code,
+                "method": res.request.method,
+                "url": res.url,
+                "req": format_payload(res.request.body),
+            },
+        )
+        return res.content
 
     def validate_authentication(self):
         logger.info("Validating authentication token")
-        _ = self.request(HTTPMethod.POST, "api/auth/validateToken")
+        _ = self.request_json(HTTPMethod.POST, "api/auth/validateToken")
         logger.info("Authentication successful")
 
     def get_tags(self) -> list[ImmichTag]:
         logger.info("Looking up all tags")
-        tags = [ImmichTag(**tag) for tag in self.request(HTTPMethod.GET, "api/tags")]
+        tags = [ImmichTag(**tag) for tag in self.request_json(HTTPMethod.GET, "api/tags")]
         logger.info("Found %d tags", len(tags))
         return tags
 
@@ -112,6 +149,13 @@ class ImmichClient:
         tag = matches[0]
         logger.info("Filtered tags by name, selected %s", repr(tag))
         return tag
+
+    def download_asset(self, asset_id: str) -> bytes:
+        logger.info("Downloading asset %s", asset_id)
+        return self.request_bytes(
+            HTTPMethod.GET,
+            f"api/assets/{asset_id}/original"
+        )
 
     def get_random(
         self,
@@ -129,7 +173,7 @@ class ImmichClient:
         )
         assets = [
             ImmichAsset(**asset)
-            for asset in self.request(
+            for asset in self.request_json(
                 HTTPMethod.POST,
                 "api/search/random",
                 json={

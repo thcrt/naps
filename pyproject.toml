@@ -8,6 +8,7 @@ authors = [
 ]
 requires-python = ">=3.13"
 dependencies = [
+    "redmail>=0.6.0",
     "requests>=2.32.3",
     "rich>=14.0.0",
     "tattl>=0.3.1",
