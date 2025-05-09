@@ -1,5 +1,7 @@
 import logging
 from http import HTTPStatus
+from pathlib import Path
+from time import sleep
 
 import typer
 from apscheduler.schedulers.blocking import (  # pyright: ignore[reportMissingTypeStubs]
@@ -7,13 +9,20 @@ from apscheduler.schedulers.blocking import (  # pyright: ignore[reportMissingTy
 )
 from redmail.email.sender import EmailSender
 from requests import HTTPError, PreparedRequest
+from rich import print as rich_print
 from rich.logging import RichHandler
 
 from .client import ImmichClient, format_payload
 from .config import Config, load_config
+from .state import StateManager
 
 app = typer.Typer()
 
+MAX_BACKOFF = 60 * 60 * 24 * 7  # 1 week
+
+
+config = load_config()
+state = StateManager(Path("db.sqlite3"))
 
 logger = logging.getLogger("naps")
 logger.addHandler(RichHandler(rich_tracebacks=True, tracebacks_code_width=None))  # pyright: ignore[reportArgumentType]
@@ -23,7 +32,20 @@ def send(config: Config, sender: EmailSender):
     client = ImmichClient(config.immich.base_url, config.immich.api_key)
 
     tag = client.get_tag_by_name(config.immich.tag_name)
-    image = client.get_random(asset_type="IMAGE", tag_id=tag.id)[0]
+
+    backoff_seconds = 1
+    while True:
+        image = client.get_random(asset_type="IMAGE", tag_id=tag.id)[0]
+        if not state.was_sent(image):
+            break
+        logger.info(
+            "Chosen image %s has already been sent. Will choose another after %d seconds.",
+            image.id,
+            backoff_seconds,
+        )
+        sleep(backoff_seconds)
+        backoff_seconds = min(backoff_seconds * 2, MAX_BACKOFF)
+
     image_data = client.download_asset(image.id)
 
     logger.info('Sending email to "%s"', config.email.recipient)
@@ -34,12 +56,11 @@ def send(config: Config, sender: EmailSender):
         text=config.email.text,
         attachments={image.filename: image_data},
     )
+    state.mark_sent([image])
 
 
 @app.command()
-def main(log: str = "INFO") -> None:
-    logger.setLevel(log)
-    config = load_config()
+def run() -> None:
     scheduler = BlockingScheduler()
 
     logger.info(
@@ -65,6 +86,18 @@ def main(log: str = "INFO") -> None:
 
     _ = scheduler.add_job(lambda: send(config, sender), "interval", seconds=30)  # pyright: ignore[reportUnknownMemberType]
     scheduler.start()  # pyright: ignore[reportUnknownMemberType]
+
+
+@app.command()
+def list_sent() -> None:
+    for asset_id in state.list_sent():
+        rich_print(asset_id)
+
+
+@app.callback()
+def main(log: str = "WARNING") -> None:
+    logger.setLevel(log)
+    logger.info("Starting naps!")
 
 
 if __name__ == "__main__":
