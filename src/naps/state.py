@@ -3,7 +3,7 @@ import sqlite3
 from pathlib import Path
 from types import TracebackType
 
-from .client import ImmichAsset
+from .client.models import ImmichAsset
 
 TABLE_SQL = (("sent_assets", "CREATE TABLE sent_assets(id)"),)
 
@@ -69,3 +69,6 @@ class StateManager:
         with self._connect() as con:
             cur = con.cursor()
             return [row[0] for row in cur.execute("SELECT id FROM sent_assets").fetchall()]
+
+
+state = StateManager(Path("db.sqlite3"))

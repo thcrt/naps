@@ -1,60 +1,20 @@
 import logging
 from http import HTTPMethod, HTTPStatus
-from json import JSONDecodeError
-from typing import Any, Literal, override
+from time import sleep
+from typing import Any
 from urllib.parse import urljoin
 
 from requests import HTTPError, Session
-from rich.json import JSON
+
+from naps.state import state
+from naps.utils import format_payload
+
+from .models import ImmichAsset, ImmichAssetType, ImmichTag
+
+DEFAULT_OK = [HTTPStatus.OK]
+MAX_BACKOFF = 60 * 60 * 24 * 7  # 1 week
 
 logger = logging.getLogger(__name__)
-DEFAULT_OK = [HTTPStatus.OK]
-
-
-def format_payload(data: str | bytes | None):
-    if not data:
-        return ""
-    if isinstance(data, bytes):
-        data = data.decode()
-    try:
-        return JSON(data).text
-    except JSONDecodeError:
-        return data
-
-
-type ImmichAssetType = Literal["IMAGE", "VIDEO", "AUDIO", "OTHER"]
-
-
-class ImmichAsset:
-    id: str
-    filename: str
-    asset_type: ImmichAssetType
-
-    def __init__(self, **kwargs: Any) -> None:
-        self.id = kwargs["id"]
-        self.filename = kwargs["originalFileName"]
-        self.asset_type = kwargs["type"]
-
-    @override
-    def __repr__(self) -> str:
-        return f'ImmichAsset({self.asset_type}, "{self.id}")'
-
-
-class ImmichTag:
-    id: str
-    parent_id: str | None
-    name: str
-    full_name: str
-
-    def __init__(self, **kwargs: Any) -> None:
-        self.id = kwargs["id"]
-        self.name = kwargs["name"]
-        self.full_name = kwargs["value"]
-        self.parent_id = kwargs.get("parentId")
-
-    @override
-    def __repr__(self) -> str:
-        return f'ImmichTag("{self.full_name}", "{self.id}")'
 
 
 class ImmichClient:
@@ -191,3 +151,22 @@ Request:   %(req)s
             logger.debug(assets)
 
         return assets
+
+    def get_random_unique(
+        self,
+        asset_type: ImmichAssetType | None = "IMAGE",
+        tag_id: str | None = None,
+    ):
+        backoff_seconds = 1
+        while True:
+            image = self.get_random(asset_type=asset_type, tag_id=tag_id)[0]
+            if not state.was_sent(image):
+                break
+            logger.info(
+                "Chosen image %s has already been sent. Will choose another after %d seconds.",
+                image.id,
+                backoff_seconds,
+            )
+            sleep(backoff_seconds)
+            backoff_seconds = min(backoff_seconds * 2, MAX_BACKOFF)
+        return image

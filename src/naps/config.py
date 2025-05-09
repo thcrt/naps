@@ -36,7 +36,10 @@ class Config:
     email: EmailConfig
 
 
-def load_config():
-    with Path("config.toml").open("rb") as f:
+def load_config(path: Path):
+    with path.open("rb") as f:
         data = tomllib.load(f)
     return tattl.unpack_dict(data, Config)
+
+
+config = load_config(Path("config.toml"))
