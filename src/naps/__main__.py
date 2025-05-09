@@ -19,7 +19,9 @@ logger = logging.getLogger("naps")
 logger.addHandler(RichHandler(rich_tracebacks=True, tracebacks_code_width=None))  # pyright: ignore[reportArgumentType]
 
 
-def send(client: ImmichClient, config: Config, sender: EmailSender):
+def send(config: Config, sender: EmailSender):
+    client = ImmichClient(config.immich.base_url, config.immich.api_key)
+
     tag = client.get_tag_by_name(config.immich.tag_name)
     image = client.get_random(asset_type="IMAGE", tag_id=tag.id)[0]
     image_data = client.download_asset(image.id)
@@ -38,7 +40,6 @@ def send(client: ImmichClient, config: Config, sender: EmailSender):
 def main(log: str = "INFO") -> None:
     logger.setLevel(log)
     config = load_config()
-    client = ImmichClient(config.immich.base_url, config.immich.api_key)
     scheduler = BlockingScheduler()
 
     logger.info(
@@ -62,7 +63,7 @@ def main(log: str = "INFO") -> None:
         use_starttls=config.email.smtp.start_tls,
     )
 
-    _ = scheduler.add_job(lambda: send(client, config, sender), "interval", seconds=30)  # pyright: ignore[reportUnknownMemberType]
+    _ = scheduler.add_job(lambda: send(config, sender), "interval", seconds=30)  # pyright: ignore[reportUnknownMemberType]
     scheduler.start()  # pyright: ignore[reportUnknownMemberType]
 
 
