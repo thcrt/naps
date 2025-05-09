@@ -152,10 +152,7 @@ Request:   %(req)s
 
     def download_asset(self, asset_id: str) -> bytes:
         logger.info("Downloading asset %s", asset_id)
-        return self.request_bytes(
-            HTTPMethod.GET,
-            f"api/assets/{asset_id}/original"
-        )
+        return self.request_bytes(HTTPMethod.GET, f"api/assets/{asset_id}/original")
 
     def get_random(
         self,
