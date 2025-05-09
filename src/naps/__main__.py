@@ -19,7 +19,7 @@ app = typer.Typer()
 
 
 @app.callback()
-def main(log: str = "WARNING") -> None:
+def main(log: str = "INFO") -> None:
     logger.setLevel(log)
     logger.info("Starting naps!")
 
