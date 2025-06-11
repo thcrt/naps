@@ -22,7 +22,7 @@ class ImmichClient:
     host: str
 
     def __init__(self, host: str, api_key: str) -> None:
-        logger.info("Initialising connection to host %s", host)
+        logger.debug("Initialising connection to host %s", host)
         self.host = host
         self._session = Session()
         self._session.headers.update({"x-api-key": api_key})
@@ -89,14 +89,14 @@ Request:   %(req)s
         return res.content
 
     def validate_authentication(self):
-        logger.info("Validating authentication token")
+        logger.debug("Validating authentication token")
         _ = self.request_json(HTTPMethod.POST, "api/auth/validateToken")
-        logger.info("Authentication successful")
+        logger.debug("Authentication successful")
 
     def get_tags(self) -> list[ImmichTag]:
-        logger.info("Looking up all tags")
+        logger.debug("Looking up all tags")
         tags = [ImmichTag(**tag) for tag in self.request_json(HTTPMethod.GET, "api/tags")]
-        logger.info("Found %d tags", len(tags))
+        logger.debug("Found %d tags", len(tags))
         return tags
 
     def get_tag_by_name(self, name: str) -> ImmichTag:
@@ -107,11 +107,11 @@ Request:   %(req)s
                 {"name": name, "matches": len(matches)},
             )
         tag = matches[0]
-        logger.info("Filtered tags by name, selected %s", repr(tag))
+        logger.debug("Filtered tags by name, selected %s", repr(tag))
         return tag
 
     def download_asset(self, asset_id: str) -> bytes:
-        logger.info("Downloading asset %s", asset_id)
+        logger.debug("Downloading asset %s", asset_id)
         return self.request_bytes(HTTPMethod.GET, f"api/assets/{asset_id}/original")
 
     def get_random(

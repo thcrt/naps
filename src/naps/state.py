@@ -14,7 +14,7 @@ class Connection:
     _con: sqlite3.Connection
 
     def __init__(self, path: Path) -> None:
-        logger.info("Opening connection to database at %s", path)
+        logger.debug("Opening connection to database at %s", path)
         self._con = sqlite3.connect(path)
         self._con.set_trace_callback(logger.debug)
 
@@ -27,7 +27,7 @@ class Connection:
         exc_val: BaseException | None,
         exc_tb: TracebackType | None,
     ):
-        logger.info("Closing database connection")
+        logger.debug("Closing database connection")
         self._con.close()
 
 
