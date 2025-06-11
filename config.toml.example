@@ -1,0 +1,18 @@
+[immich]
+base_url = "https://immich.example"
+api_key = "SuperSecret"
+tag_name = "naps"
+
+[email]
+sender = "no-reply@immich.example"
+recipient = "recipient@example.com"
+
+[email.smtp]
+host = "smtp.emailhost.example"
+port = 587
+username = "no-reply@immich.example"
+password = "SuperDuperSecret"
+start_tls = true
+
+[schedule]
+days = 7
