@@ -31,9 +31,18 @@ class ImmichConfig:
 
 
 @dataclass
+class ScheduleConfig:
+    days: int
+    hours: int = 0
+    minutes: int = 0
+    seconds: int = 0
+
+
+@dataclass
 class Config:
     immich: ImmichConfig
     email: EmailConfig
+    schedule: ScheduleConfig
 
 
 def load_config(path: Path):

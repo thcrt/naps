@@ -1,6 +1,14 @@
 import logging
+from datetime import UTC, datetime, timedelta
 from http import HTTPStatus
+from typing import cast
 
+from apscheduler.events import (  # pyright: ignore[reportMissingTypeStubs]
+    EVENT_JOB_ERROR,
+    EVENT_JOB_EXECUTED,
+    EVENT_SCHEDULER_STARTED,
+    JobEvent,
+)
 from apscheduler.schedulers.blocking import (  # pyright: ignore[reportMissingTypeStubs]
     BlockingScheduler,
 )
@@ -49,4 +57,27 @@ Response:  %(res)s
 
 
 scheduler = BlockingScheduler()
-_ = scheduler.add_job(job, "interval", seconds=30)  # pyright: ignore[reportUnknownMemberType]
+scheduled_job = scheduler.add_job(  # pyright: ignore[reportUnknownMemberType]
+    job,
+    "interval",
+    days=config.schedule.days,
+    hours=config.schedule.hours,
+    minutes=config.schedule.minutes,
+    seconds=config.schedule.seconds,
+)
+
+
+def log_next_run(_: JobEvent):
+    next_run = cast("datetime", scheduled_job.next_run_time)  # pyright: ignore[reportUnknownMemberType]
+    delta = next_run - datetime.now(tz=UTC)
+    logger.info(
+        "Next run scheduled for %s (in %d days, %s)",
+        next_run,
+        delta.days,
+        timedelta(seconds=delta.seconds),
+    )
+
+
+scheduler.add_listener(  # pyright: ignore[reportUnknownMemberType]
+    log_next_run, EVENT_JOB_ERROR | EVENT_JOB_EXECUTED | EVENT_SCHEDULER_STARTED
+)
