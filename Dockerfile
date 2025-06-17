@@ -1,5 +1,5 @@
 ARG PYTHON_VERSION="3.13.2"
-ARG DEBIAN_VERSION="slim-bullseye"
+ARG DEBIAN_VERSION="bullseye"
 ARG UV_VERSION="0.7.12"
 
 # Current project version, determined by `hatch-vcs`
