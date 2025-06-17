@@ -16,6 +16,7 @@ from requests import HTTPError, PreparedRequest
 
 from .client import ImmichClient
 from .config import config
+from .converter import convert
 from .sender import sender
 from .utils import format_payload
 
@@ -29,6 +30,7 @@ def job():
 
         image = client.get_random_unique(asset_type="IMAGE", tag_id=tag.id)
         data = client.download_asset(image.id)
+        image, data = convert(image, data)
         sender.send(image, data)
     except HTTPError as e:
         match e.response.status_code:
