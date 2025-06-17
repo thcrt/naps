@@ -41,7 +41,7 @@ class Sender:
             sender=config.email.sender,
             receivers=[config.email.recipient],
             text=config.email.text,
-            attachments={image.filename: data},
+            attachments={f"{image.filename}.jpg": data},
         )
         state.mark_sent([image])
 

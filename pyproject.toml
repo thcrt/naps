@@ -9,6 +9,9 @@ authors = [
 requires-python = ">=3.13"
 dependencies = [
     "apscheduler>=3.11.0",
+    "pi-heif>=0.22.0",
+    "pillow>=11.2.1",
+    "python-magic>=0.4.27",
     "redmail>=0.6.0",
     "requests>=2.32.3",
     "rich>=14.0.0",

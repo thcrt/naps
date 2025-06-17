@@ -9,6 +9,7 @@ from requests import HTTPError, Session
 from naps.state import state
 from naps.utils import format_payload
 
+from .converter import convert
 from .models import ImmichAsset, ImmichAssetType, ImmichTag
 
 DEFAULT_OK = [HTTPStatus.OK]
@@ -112,7 +113,8 @@ Request:   %(req)s
 
     def download_asset(self, asset_id: str) -> bytes:
         logger.debug("Downloading asset %s", asset_id)
-        return self.request_bytes(HTTPMethod.GET, f"api/assets/{asset_id}/original")
+        data = self.request_bytes(HTTPMethod.GET, f"api/assets/{asset_id}/original")
+        return convert(data)
 
     def get_random(
         self,
