@@ -64,6 +64,7 @@ scheduled_job = scheduler.add_job(  # pyright: ignore[reportUnknownMemberType]
     hours=config.schedule.hours,
     minutes=config.schedule.minutes,
     seconds=config.schedule.seconds,
+    start_date=datetime.now(tz=UTC) + timedelta(seconds=5) if config.schedule.rush else None,
 )
 
 

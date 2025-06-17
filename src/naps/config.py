@@ -36,6 +36,7 @@ class ScheduleConfig:
     hours: int = 0
     minutes: int = 0
     seconds: int = 0
+    rush: bool = False
 
 
 @dataclass
